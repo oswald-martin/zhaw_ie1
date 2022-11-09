@@ -5,6 +5,7 @@ from nltk.corpus import stopwords
 from nltk import download
 from nltk.stem import SnowballStemmer
 from nltk import FreqDist
+import numpy as np
 
 PATH_DOCS = 'documents'
 PATH_QRIS = 'queries'
@@ -27,12 +28,15 @@ stemmer = SnowballStemmer('english')
 invindex = defaultdict(lambda: defaultdict(int))
 non_invindex = defaultdict(lambda: defaultdict(int))
 queries = defaultdict(lambda: defaultdict(int))
+d_norm = defaultdict(int)
+idf = {}
 
 ########################################################################################################################
 # Index documents
 ########################################################################################################################
 
 for doc in Path(PATH_DOCS).iterdir():
+    print(f'indexing: {doc}')
     doc_text = doc.read_text()
     # tokenize text
     tokens = word_tokenize(doc_text)
@@ -46,6 +50,17 @@ for doc in Path(PATH_DOCS).iterdir():
     for token, freq in freq_dist.items():
         invindex[token][doc] += freq
         non_invindex[doc][token] += freq
+
+########################################################################################################################
+# Compute IDF and dNorm
+########################################################################################################################
+
+total_nr_documents = len(non_invindex.keys())
+for doc, tokens in non_invindex.items():
+    for token in tokens:
+        idf[token] = np.log((1+total_nr_documents)/(1+invindex[token][doc]))
+        d_norm[doc] += (non_invindex[doc][token] * idf[token])**2
+    d_norm[doc] = np.sqrt(d_norm[doc])
 
 ########################################################################################################################
 # Index queries
