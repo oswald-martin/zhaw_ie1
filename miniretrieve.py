@@ -11,6 +11,7 @@ PATH_DOCS = 'documents'
 PATH_QRIS = 'queries'
 STEMMING = True
 STOPWORDS = True
+NR_RESULTS = 10
 
 ########################################################################################################################
 # Initiate NLTK
@@ -28,8 +29,9 @@ stemmer = SnowballStemmer('english')
 invindex = defaultdict(lambda: defaultdict(int))
 non_invindex = defaultdict(lambda: defaultdict(int))
 queries = defaultdict(lambda: defaultdict(int))
+accu = defaultdict(lambda: defaultdict(int))
 d_norm = defaultdict(int)
-idf = {}
+idf = defaultdict(int)
 
 ########################################################################################################################
 # Index documents
@@ -56,6 +58,7 @@ for doc in Path(PATH_DOCS).iterdir():
 ########################################################################################################################
 
 total_nr_documents = len(non_invindex.keys())
+
 for doc, tokens in non_invindex.items():
     for token in tokens:
         idf[token] = np.log((1+total_nr_documents)/(1+invindex[token][doc]))
@@ -67,6 +70,7 @@ for doc, tokens in non_invindex.items():
 ########################################################################################################################
 
 for query in Path(PATH_QRIS).iterdir():
+    print(f'indexing: {query}')
     query_text = query.read_text()
     # tokenize text
     tokens = word_tokenize(query_text)
@@ -79,3 +83,31 @@ for query in Path(PATH_QRIS).iterdir():
     # fill datastructure
     for token, freq in freq_dist.items():
         queries[query][token] += freq
+
+########################################################################################################################
+# Fill accumulatior
+########################################################################################################################
+
+for query, tokens in queries.items():
+    q_norm = 0
+    for token in tokens:
+        idf_token = idf[token] if idf[token] != 0 else np.log(total_nr_documents+1)
+        b = queries[query][token] * idf_token
+        q_norm += b**2
+        if token in invindex.keys():
+            for doc in invindex[token]:
+                a = invindex[token][doc] * idf_token
+                accu[query][doc] += a*b
+
+    q_norm = np.sqrt(q_norm)
+    for doc in accu[query].keys():
+        accu[query][doc] = accu[query][doc] / (d_norm[doc] * q_norm)
+    accu_sorted = sorted(accu[query].items(), key=lambda x:x[1])
+    n = 0
+    for res in accu[query].keys():
+        if n == NR_RESULTS:
+            break
+        else:
+            print(f'query:{query} \t document: {res} \t rank: {n+1}')
+            n += 1
+    print('\n')
