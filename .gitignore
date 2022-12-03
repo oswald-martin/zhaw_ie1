@@ -133,3 +133,7 @@ dmypy.json
 
 # PDF's
 *.pdf
+
+queries
+documents
+skb/unigram_freq.csv

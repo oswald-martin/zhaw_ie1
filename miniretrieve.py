@@ -9,7 +9,7 @@ import numpy as np
 
 PATH_DOCS = 'documents'
 PATH_QRIS = 'queries'
-STEMMING = True
+STEMMING = False
 STOPWORDS = True
 NR_RESULTS = 10
 
@@ -102,12 +102,12 @@ for query, tokens in queries.items():
     q_norm = np.sqrt(q_norm)
     for doc in accu[query].keys():
         accu[query][doc] = accu[query][doc] / (d_norm[doc] * q_norm)
-    accu_sorted = sorted(accu[query].items(), key=lambda x:x[1])
+    accu_sorted = sorted(accu[query].items(), key=lambda x: x[1], reverse=True)
     n = 0
-    for res in accu[query].keys():
+    for res, rsv in accu_sorted:
         if n == NR_RESULTS:
             break
         else:
-            print(f'query:{query} \t document: {res} \t rank: {n+1}')
+            print(f'query:{query} \t document: {res} \t rank: {n+1} \t rsv: {rsv}')
             n += 1
     print('\n')
