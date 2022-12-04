@@ -11,11 +11,11 @@ from csv import reader
 
 PATH_DOCS = 'skb/documents'
 PATH_QRIS = 'skb/queries'
-PATH_UGRM = 'skb/unigram_freq.csv'
+PATH_FREQ = 'skb/unigram_freq.csv'
 OUTFILE = 'skb/result_mix.txt'
 STEMMING = True
 STOPWORDS = True
-UNIGRAM = True
+FREQ_IDF = True
 NR_RESULTS = 1000
 
 ########################################################################################################################
@@ -37,17 +37,17 @@ queries = defaultdict(lambda: defaultdict(int))
 accu = defaultdict(lambda: defaultdict(int))
 d_norm = defaultdict(int)
 idf = defaultdict(int)
-unigram = defaultdict(lambda: 1)
+freq = defaultdict(lambda: 1)
 
 ########################################################################################################################
 # Read unigram freq
 ########################################################################################################################
 
-with open(PATH_UGRM) as csvfile:
+with open(PATH_FREQ) as csvfile:
     for row in reader(csvfile):
         token = stemmer.stem(row[0]) if STEMMING else row[0]
         freq = int(row[1])
-        unigram[token] += freq
+        freq[token] += freq
 
 ########################################################################################################################
 # Index documents
@@ -77,8 +77,8 @@ total_nr_documents = len(non_invindex.keys())
 
 for doc, tokens in non_invindex.items():
     for token in tokens:
-        if UNIGRAM:
-            idf[token] = np.log((1+total_nr_documents)/(1+invindex[token][doc]))/unigram[token]
+        if FREQ_IDF:
+            idf[token] = 1./freq[token]
         else:
             idf[token] = np.log((1+total_nr_documents)/(1+invindex[token][doc]))
         d_norm[doc] += (non_invindex[doc][token] * idf[token])**2
@@ -131,6 +131,6 @@ for query, tokens in queries.items():
             d = re.findall(r'\d+', res.__str__())[0]
             print(f'query:{query} \t document: {res} \t rank: {n} \t rsv: {rsv}')
             with open(OUTFILE, 'a') as f:
-                f.write(f'{q} Q0 {d} {n} {rsv} celery\n')
+                f.write(f'{q} Q0 {d} {n} {rsv} ten&tin\n')
             n += 1
     print('\n')
